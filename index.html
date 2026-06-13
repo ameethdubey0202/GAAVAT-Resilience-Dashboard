@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GAAVAT Resilience Dashboard v1.0 | SDMA Maharashtra</title>
+  <meta name="description" content="GAAVAT Resilience Dashboard. Village Disaster Preparedness Intelligence Platform. SDMA Maharashtra." />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+
+<!-- ── METHODOLOGY MODAL ──────────────────────────────────────────── -->
+<div class="modal-overlay" id="methodologyOverlay" role="dialog" aria-modal="true" aria-labelledby="methodTitle">
+  <div class="modal-box wide">
+    <button class="modal-close" id="methodClose" aria-label="Close">×</button>
+    <h2 id="methodTitle">How Scores Are Calculated</h2>
+    <div id="methodBody"></div>
+  </div>
+</div>
+
+<!-- ── ACTION MODAL ───────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <button class="modal-close" id="modalClose" aria-label="Close">×</button>
+    <h2 id="modalTitle"></h2>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div class="app-shell">
+
+  <!-- ── SIDEBAR ───────────────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="brand-block">
+      <div class="emblem" title="Government of Maharashtra">म</div>
+      <div>
+        <p class="eyebrow">Government of Maharashtra</p>
+        <h1>SDMA Maharashtra</h1>
+        <p class="tagline">सज्ज रहा, सुरक्षित रहा</p>
+      </div>
+    </div>
+
+    <div class="project-mark">
+      <span>GAAVAT</span>
+      <small>Village Disaster Preparedness</small>
+    </div>
+
+    <nav class="nav-list" id="navList" role="navigation" aria-label="Dashboard views">
+      <button class="nav-item active" data-view="command">State Command</button>
+      <button class="nav-item" data-view="district">District Performance</button>
+      <button class="nav-item" data-view="gp">GP Cluster</button>
+      <button class="nav-item" data-view="behaviour">Behaviour Change</button>
+      <button class="nav-item" data-view="gis">GIS Intelligence</button>
+      <button class="nav-item" data-view="ndma">NDMA Reporting</button>
+    </nav>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-card">
+      <p class="sidebar-label">Active Season</p>
+      <strong id="sidebarSeason">Heatwave &amp; Pre-Monsoon</strong>
+      <span id="sidebarPeriod">Apr–Jun 2026</span>
+    </div>
+
+    <div class="sidebar-card pilot-sidebar-card">
+      <p class="sidebar-label">Illustrative Pilot Configuration</p>
+      <strong>6 Districts · 120 GPs</strong>
+      <div class="pilot-district-list" id="sidebarPilotList"></div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-version">
+      <span class="version-tag">v1.0 · Demonstration Build</span>
+      <span>Last Updated: June 2026</span>
+    </div>
+
+    <div class="sidebar-card subdued">
+      <p class="sidebar-label">Demo Mode</p>
+      Illustrative data for concept validation and stakeholder consultation. Connect live field data before production deployment.
+    </div>
+  </aside>
+
+  <!-- ── MAIN CONTENT ───────────────────────────────────────────────── -->
+  <main class="main-content">
+
+    <!-- Print header -->
+    <div class="print-header">
+      <div class="print-header-logo">SDMA Maharashtra</div>
+      <h1>GAAVAT Resilience Dashboard — Executive Brief</h1>
+      <p>GAAVAT Dashboard v1.0 · Demonstration Build for Stakeholder Consultation</p>
+    </div>
+
+    <!-- ── TOPBAR ──────────────────────────────────────────────────── -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <p class="eyebrow">GAAVAT Resilience Dashboard · v1.0</p>
+        <h2 id="pageTitle">State Command Centre</h2>
+      </div>
+      <div class="top-actions">
+        <select id="districtSelector" aria-label="Select District"></select>
+        <div class="season-selector-wrap">
+          <select id="seasonSelector" aria-label="Select Resilience Season">
+            <option value="presum">Winter &amp; Pre-Summer (Jan–Mar)</option>
+            <option value="premonsoon" selected>Heatwave &amp; Pre-Monsoon (Apr–Jun)</option>
+            <option value="monsoon">Monsoon Preparedness (Jul–Sep)</option>
+            <option value="recovery">Recovery &amp; Resilience (Oct–Dec)</option>
+          </select>
+          <span class="season-period" id="seasonPeriod">Reporting Period: 1 Apr 2026 – 30 Jun 2026</span>
+        </div>
+        <div class="search-wrap">
+          <input id="rankSearch" type="search" placeholder="Search districts…" autocomplete="off" aria-label="Search districts" />
+        </div>
+        <div class="lang-selector-wrap">
+          <span class="lang-globe">🌐</span>
+          <select id="langSelector" aria-label="Select Language">
+            <option value="en" selected>English</option>
+            <option value="mr" disabled>Marathi (Coming Soon)</option>
+          </select>
+        </div>
+        <button class="btn outline" id="methodologyBtn">How Scores Are Calculated</button>
+        <button class="btn secondary" id="toggleMode">Monsoon Alert Mode</button>
+        <button class="btn primary" id="exportBtn">Export Brief</button>
+      </div>
+    </header>
+
+    <!-- Season Focus Bar -->
+    <div class="season-focus-bar" id="seasonFocusBar">
+      <span class="sfb-label">Season Focus:</span>
+      <div class="sfb-tags" id="seasonFocusTags"></div>
+    </div>
+
+    <!-- Alert Banner -->
+    <section class="alert-banner" id="alertBanner" role="alert">
+      <strong>Preparedness Intelligence:</strong> 6 districts below critical DRI threshold. 14 GPs show high hazard exposure with low household preparedness.
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- VIEW 1 — STATE COMMAND CENTRE                                 -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <section class="view active" id="command" role="tabpanel" aria-label="State Command Centre">
+
+      <!-- Hero KPIs -->
+      <div class="hero-grid">
+        <div class="state-score-card">
+          <p>Maharashtra Resilience Score (DRI)</p>
+          <div class="score-line">
+            <span id="stateScore">61</span><small>/100</small>
+          </div>
+          <div class="progress"><i id="stateScoreBar" style="width:0%"></i></div>
+          <span class="status-pill developing">Developing · ↑ 8 points from Season 1</span>
+        </div>
+        <div class="kpi-card">
+          <p>Districts Strong</p>
+          <strong>7</strong>
+          <span>DRI ≥ 70 · of 36</span>
+        </div>
+        <div class="kpi-card">
+          <p>Events This Season</p>
+          <strong id="seasonEvents">186</strong>
+          <span id="seasonEventsLabel">Target 216</span>
+        </div>
+        <div class="kpi-card">
+          <p>Avg Data Quality</p>
+          <strong>74%</strong>
+          <span>↑ 6% from last season</span>
+        </div>
+      </div>
+
+      <!-- NDMA-MoPR Pilot Card -->
+      <div class="pilot-programme-card" id="pilotCard">
+        <div class="pilot-card-left">
+          <p class="pilot-card-eyebrow">Illustrative Alignment with NDMA and MoPR Structures</p>
+          <h3>Example Pilot District Configuration</h3>
+          <div class="pilot-districts-row" id="pilotDistrictChips"></div>
+          <p class="pilot-rationale">Pilot districts selected to represent Maharashtra's major hazard geographies, including coastal, flood-prone, drought-prone, tribal, urban and earthquake-risk regions.</p>
+        </div>
+        <div class="pilot-card-right">
+          <div class="pilot-stat"><strong>6</strong><span>Districts</span></div>
+          <div class="pilot-stat-divider"></div>
+          <div class="pilot-stat"><strong>120</strong><span>Gram Panchayats</span></div>
+        </div>
+      </div>
+
+      <!-- BharatFS + GeoDSS Forecast Intelligence -->
+      <div class="panel forecast-panel" id="forecastPanel">
+        <div class="panel-head">
+          <div>
+            <h3>BharatFS + GeoDSS Forecast Intelligence</h3>
+            <p>Active forecast hazards matched against current GAAVAT preparedness scores. Next 96-hour window.</p>
+          </div>
+          <span class="forecast-timestamp">Illustrative Forecast Window · Sample Data</span>
+        </div>
+        <div id="forecastList" class="forecast-list"></div>
+        <p class="panel-attribution">Bharat Forecast System (BharatFS): SDMA Maharashtra–IITM Pune Forecast Layer.</p>
+      </div>
+
+      <!-- Map + Alerts -->
+      <div class="content-grid two-one">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3>36-District Resilience Heat Map</h3>
+              <p>Click any tile to open its performance profile. ★ = NDMA-MoPR pilot district.</p>
+            </div>
+            <div class="segmented" id="mapMetric">
+              <button class="active" data-metric="dri">DRI</button>
+              <button data-metric="hpi">HPI</button>
+              <button data-metric="ipi">IPI</button>
+              <button data-metric="bci">BCI</button>
+            </div>
+          </div>
+          <div class="mh-map" id="districtMap"></div>
+        </div>
+        <div class="panel alert-console">
+          <h3>Alert Console</h3>
+          <div id="alertsList"></div>
+        </div>
+      </div>
+
+      <!-- Ranking + Chart -->
+      <div class="content-grid half">
+        <div class="panel">
+          <h3>District Ranking</h3>
+          <div class="table-wrap"><table id="rankingTable"></table></div>
+        </div>
+        <div class="panel">
+          <h3>Top 10 Districts — Sub-Index Breakdown</h3>
+          <div style="height:280px"><canvas id="subIndexChart"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- VIEW 2 — DISTRICT PERFORMANCE                                 -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <section class="view" id="district" role="tabpanel" aria-label="District Performance">
+      <div class="section-head">
+        <h3 id="districtTitle">District Performance</h3>
+        <p>Action-oriented dashboard for District Collector, DDMO and SDMA review.</p>
+        <div id="pilotBadge" style="margin-top:8px"></div>
+      </div>
+
+      <div class="hero-grid six" id="districtKpis"></div>
+
+      <div class="content-grid half">
+        <div class="panel">
+          <h3>DRI Components — Radar</h3>
+          <div style="height:280px"><canvas id="districtRadar"></canvas></div>
+        </div>
+        <div class="panel">
+          <h3>GP Cluster Performance</h3>
+          <div id="clusterCards" class="cluster-grid"></div>
+        </div>
+      </div>
+
+      <div class="content-grid half">
+        <div class="panel">
+          <h3>Event Calendar &amp; Completion</h3>
+          <div id="eventTimeline" class="timeline"></div>
+        </div>
+        <div class="panel">
+          <h3>Department Convergence Score</h3>
+          <div style="height:280px"><canvas id="deptChart"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- VIEW 3 — GP CLUSTER INTELLIGENCE                              -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <section class="view" id="gp" role="tabpanel" aria-label="GP Cluster Intelligence">
+      <div class="section-head">
+        <h3>GP Cluster Intelligence</h3>
+        <p>State → District → GP Cluster → Gram Panchayat preparedness evidence chain.</p>
+      </div>
+
+      <div class="content-grid two-one">
+        <div class="panel">
+          <h3>GP Readiness Board</h3>
+          <div id="gpBoard" class="gp-board"></div>
+        </div>
+        <div class="panel">
+          <h3>Selected GP Scorecard</h3>
+          <div id="gpScorecard"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Household Preparedness Checklist — HPI Indicators</h3>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:14px">% of surveyed households in selected GP meeting each indicator.</p>
+        <div id="hpiChecklist" class="checklist"></div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- VIEW 4 — BEHAVIOUR CHANGE DASHBOARD                           -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <section class="view" id="behaviour" role="tabpanel" aria-label="Behaviour Change Dashboard">
+      <div class="section-head">
+        <h3>Behaviour Change Dashboard</h3>
+        <p>Measures whether GAAVAT changes what households know, believe and practice — not just whether events happened.</p>
+      </div>
+
+      <div class="hero-grid four">
+        <div class="kpi-card"><p>State BCI</p><strong id="stateBCI">61</strong><span id="stateBCILabel">↑ 7 from Season 1</span></div>
+        <div class="kpi-card"><p>Knowledge Recall</p><strong>69%</strong><span>4-week post-event</span></div>
+        <div class="kpi-card"><p>Attitude Change</p><strong>72%</strong><span>Personal risk belief</span></div>
+        <div class="kpi-card"><p>Practice Rate</p><strong>52%</strong><span>Actions taken (HH)</span></div>
+      </div>
+
+      <div class="content-grid half">
+        <div class="panel">
+          <h3>Knowledge vs Practice Gap — District Scatter</h3>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:8px">★ Red = NDMA-MoPR pilot districts. Diagonal gap = behaviour change challenge.</p>
+          <div style="height:280px"><canvas id="kpScatter"></canvas></div>
+        </div>
+        <div class="panel">
+          <h3>Behaviour Change Funnel</h3>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Drop-off at each stage shows where the GAAVAT programme must focus next.</p>
+          <div id="funnel" class="funnel"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Top GAAVAT Events by BCI Impact</h3>
+        <div class="table-wrap"><table id="eventImpactTable"></table></div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- VIEW 5 — GIS INTELLIGENCE (Forecast–Risk–Preparedness Gap)    -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <section class="view" id="gis" role="tabpanel" aria-label="GIS Intelligence">
+      <div class="section-head">
+        <h3>GIS Intelligence — Forecast–Risk–Preparedness Gap</h3>
+        <p>Identifies which districts and GPs face an active forecast hazard AND are currently underprepared — enabling pre-emptive protective action before the disaster strikes.</p>
+      </div>
+
+      <!-- Layer selector -->
+      <div class="layer-selector-bar">
+        <span class="layer-label">Map Layer:</span>
+        <div class="segmented" id="gisLayer">
+          <button class="active" data-layer="action">Action Priority</button>
+          <button data-layer="forecast">Hazard Forecast</button>
+          <button data-layer="exposure">Exposure</button>
+          <button data-layer="prep">Preparedness</button>
+        </div>
+        <span class="layer-desc" id="layerDesc">Composite: forecast severity × preparedness gap = action urgency</span>
+      </div>
+
+      <div class="content-grid two-one">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3 id="gisMapTitle">36-District Action Priority Map</h3>
+              <p id="gisMapDesc">Click any district to view full profile. Colour = action urgency.</p>
+            </div>
+            <div class="legend">
+              <span class="critical">Critical</span>
+              <span class="high">High</span>
+              <span class="medium">Medium</span>
+              <span class="good">Stable</span>
+            </div>
+          </div>
+          <div class="gap-map" id="gapMap"></div>
+        </div>
+        <div class="panel">
+          <h3>Spatial Alerts</h3>
+          <div id="spatialAlerts"></div>
+        </div>
+      </div>
+
+      <!-- Forecast Preparedness Alert Score explanation -->
+      <div class="fpas-explainer">
+        <div class="fpas-formula">
+          <span class="fpas-part forecast">Forecast Hazard Severity</span>
+          <span class="fpas-op">×</span>
+          <span class="fpas-part exposure">Hazard Exposure Index</span>
+          <span class="fpas-op">×</span>
+          <span class="fpas-part prep">(100 − HPI)</span>
+          <span class="fpas-op">=</span>
+          <span class="fpas-part result">Forecast Preparedness Alert Score</span>
+        </div>
+        <p class="fpas-note">Higher score = more urgent pre-emptive action required. Scores updated each forecast cycle from BharatFS weather data integrated with GAAVAT preparedness baselines.</p>
+        <p class="fpas-note" style="font-style:italic;opacity:0.85">Version 1.0 uses a simplified illustrative FPAS calculation for demonstration purposes. Full production methodology will incorporate forecast severity, hazard exposure and preparedness indicators following pilot validation.</p>
+        <p class="panel-attribution">GeoDSS: NDMA Geospatial Decision Support System. &nbsp;·&nbsp; Bharat Forecast System (BharatFS): SDMA Maharashtra–IITM Pune Forecast Layer.</p>
+      </div>
+
+      <div class="content-grid half">
+        <div class="panel">
+          <h3>District Prioritisation Table — Forecast Window</h3>
+          <div class="table-wrap"><table id="riskTable"></table></div>
+        </div>
+        <div class="panel">
+          <h3>Shelter &amp; Mitra Coverage</h3>
+          <div style="height:260px"><canvas id="coverageChart"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- VIEW 6 — NDMA REPORTING                                       -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <section class="view" id="ndma" role="tabpanel" aria-label="NDMA Reporting">
+      <div class="section-head">
+        <h3>NDMA Reporting Module</h3>
+        <p>Auto-generates MoPR-NDMA and Sendai Framework progress summaries directly from field data — eliminating 44 days of manual report preparation per year.</p>
+      </div>
+
+      <div class="hero-grid four">
+        <div class="kpi-card"><p>Report Readiness</p><strong>84%</strong><span>Illustrative Reporting Cycle</span></div>
+        <div class="kpi-card"><p>Pilot GPs Active</p><strong>120</strong><span>6 districts × 20 GPs</span></div>
+        <div class="kpi-card"><p>VDMP Active Rate</p><strong>78%</strong><span>Target 100%</span></div>
+        <div class="kpi-card"><p>Manual Effort Saved</p><strong>44 days</strong><span>Per reporting year</span></div>
+      </div>
+
+      <div class="content-grid half">
+        <div class="panel">
+          <h3>MoPR-NDMA Indicator Status</h3>
+          <div id="ndmaStatus"></div>
+        </div>
+        <div class="panel">
+          <h3>Sendai Framework Crosswalk</h3>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:12px">GAAVAT data auto-populates 6 of 7 required Sendai indicators.</p>
+          <div id="sendaiList" class="checklist"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Report Submission Timeline</h3>
+        <div id="reportTimeline" class="timeline" style="margin-top:4px"></div>
+      </div>
+
+      <div class="panel ndma-mis-note" style="margin-top:16px">
+        <p style="margin:0;font-size:13px;color:var(--navy)"><strong>Illustrative Reporting Alignment:</strong> This demonstration shows how GAAVAT data outputs can be structured to align with NDMA and MoPR MIS reporting frameworks. Reporting field mapping will be validated with relevant authorities prior to production deployment.</p>
+      </div>
+
+      <div class="panel report-card" style="margin-top:16px">
+        <div>
+          <h3 style="margin-bottom:6px">Generate Executive Brief</h3>
+          <p style="margin:0;font-size:13px;color:var(--muted)">Exports a print-ready leadership summary of all dashboard sections for quarterly review or ministerial briefing.</p>
+        </div>
+        <button class="btn primary"
+                onclick="document.body.classList.add('print-all'); window.print(); setTimeout(()=>document.body.classList.remove('print-all'),1000)">
+          Generate PDF Brief
+        </button>
+      </div>
+    </section>
+
+    <!-- ── FOOTER DISCLAIMER ─────────────────────────────────────────── -->
+    <footer class="dash-footer">
+      <div class="dash-footer-inner">
+        <p class="footer-disclaimer">
+          <strong>GAAVAT Dashboard (Demonstration Version).</strong>
+          Illustrative data is used for concept validation, platform design and stakeholder consultation.
+          Indicator definitions, weightings and calculations will be refined through pilot implementation across selected districts and Gram Panchayats.
+        </p>
+        <p class="footer-version">
+          GAAVAT Dashboard Version 1.0 — Demonstration Build &nbsp;·&nbsp; SDMA Maharashtra &nbsp;·&nbsp; Public Demonstration Version
+        </p>
+      </div>
+    </footer>
+
+  </main>
+</div>
+
+</body>
+</html>
